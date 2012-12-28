@@ -2,10 +2,11 @@
 
 path = require 'path'
 fs = require 'fs'
-{Monitor} = require 'forever-monitor'
 
 githMonitorPath = null
 GithMonitor = (try require githMonitorPath = path.join realdir, '..', 'index') or (try require githMonitorPath = 'gith-monitor') or (try require gitMonitorPath = '/usr/local/lib/node_modules/gith-monitor')
+
+{Monitor} = require githMonitorPath + '/node_modules/forever-monitor'
 
 unless GithMonitor
   console.error 'Can\'t find gith-monitor, make sure you have done `npm install -g gith-monitor`.' 
