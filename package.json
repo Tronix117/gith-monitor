@@ -21,7 +21,6 @@
     "postinstall": "chmod +x scripts/install && scripts/install",
     "postuninstall": "chmod +x scripts/uninstall && scripts/uninstall"
   },
-  "unsafe-perm": true,
   "dependencies": {
     "gith": "1.0.2",
     "coffee-script":"1.4.0",
