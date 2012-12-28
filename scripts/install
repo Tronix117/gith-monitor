@@ -33,7 +33,7 @@ while true; do
 done
 
 sudo chmod +x scripts/gith-monitor
-sudo cp scripts/gith-monitor $INITD
+sudo cp scripts/gith-monitor $INITD/gith-monitor
 
 if [ -f $ETC/gith-monitor ]
 then
