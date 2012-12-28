@@ -1,6 +1,9 @@
 gith = require 'gith'
 {exec} = require 'child_process'
 
+global.extend = (target)->
+  target[name] = arg[name] for name in Object.keys arg for arg in arguments
+  target
 
 class Callback
   exec: (scripts, callback, stdoutBuffer = '')-> 
@@ -18,8 +21,8 @@ class GithMonitor
   gith: null
   callbacksContext: new Callback
 
-  constructor: (config)->
-    @config = extend @config, config
+  constructor: ()->
+    @config = extend @config, extend (try require path.join realdir, '..', 'config') or {}, (try require '/etc/gith-monitor') or {}, (try require '~/.gith-monitor') or {}
     @gith = gith.create @config.port
 
     @loadRepos(@config.repos)

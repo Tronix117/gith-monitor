@@ -1,25 +1,27 @@
 #!/usr/bin/env coffee
 
-global.extend = (target)->
-  target[name] = arg[name] for name in Object.keys arg for arg in arguments
-  target
-
-githMonitorPath = null
-GithMonitor = (try require githMonitorPath = path.join realdir, '..', 'index') or require githMonitorPath = 'gith-monitor'
-
-init = require githMonitorPath + '/node_modules/init'
 path = require 'path'
 fs = require 'fs'
+{Monitor} = require 'forever-monitor'
 
-realdir = path.dirname(fs.realpathSync(__filename))
-
-global.config = extend (try require path.join realdir, '..', 'config') or {}, (try require '/etc/gith-monitor') or {}, (try require '~/.gith-monitor') or {}
+githMonitorPath = null
+GithMonitor = (try require githMonitorPath = path.join realdir, '..', 'index') or (try require githMonitorPath = 'gith-monitor') or (try require gitMonitorPath = '/usr/local/lib/node_modules/gith-monitor')
 
 unless GithMonitor
   console.error 'Can\'t find gith-monitor, make sure you have done `npm install -g gith-monitor`.' 
 else
-  init.simple 
-    pidfile : config.pidfile
-    logfile : config.logfile
-    command : process.argv[2]
-    run     : ()-> new GithMonitor config
+  child = new Monitor('index.coffee',
+    max: 3
+    pidFile: config.pidfile
+    silent: true
+    command: 'coffee'
+    sourceDir: gitMonitorPath
+    options: []
+    logFile: config.logfile
+    outFile: config.logfile
+    errFile: config.logfile
+  )
+
+  child.on 'exit', ()-> console.log 'gith-monitor has exited after 3 restarts'
+
+  child[process.argv[2]]()
