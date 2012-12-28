@@ -32,26 +32,26 @@ while true; do
   fi
 done
 
-sudo chmod +x gith-monitor
-sudo cp gith-monitor $INITD
+sudo chmod +x bin/gith-monitor
+sudo cp bin/gith-monitor $INITD
 
-sudo chmod +x ../config.coffee
+sudo chmod +x config.coffee
 if [ -f $ETC/gith-monitor ]
 then
   while true; do
     read -p "Configuration file already exists: $ETC/gith-monitor. Do you want to replace it?" yn
     case $yn in
-        [Yy]* ) sudo cp gith-monitor $ETC/gith-monitor
+        [Yy]* ) sudo cp config.coffee $ETC/gith-monitor;;
         [Nn]* ) ;;
         * ) echo "Please answer yes or no.";;
     esac
   done
 else
-  sudo cp gith-monitor $ETC/gith-monitor
+  sudo cp config.coffee $ETC/gith-monitor
 fi
 
 $INITD/gith-monitor start
 
 echo -e "\n\n Gith Monitor is now fully installed and running.\n\nYou can edit the configuration with 'vi $ETC/gith-monitor' and once done, restart the server with '$INITD/gith-monitor restart'."
 
-echo -e "\nNote that you can also have a user based configuration, you can copy $ETC/gith-monitor to ~/.gith-monitor or to ~/.gith-monitor/index.coffee for more complex configurations."
+echo -e "\nNote that you can also have a user based configuration, you can copy $ETC/gith-monitor to ~/.gith-monitor or to ~/.gith-monitor/index.coffee for more complex configurations.\n\n\n"

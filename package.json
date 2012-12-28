@@ -14,17 +14,15 @@
   "engines": {
     "node": ">0.6.12"
   },
-  "config":{
-    "unsafe-perm": true
-  },
   "scripts": {
     "start": "scripts/gith-monitor start",
     "stop": "scripts/gith-monitor stop",
     "restart": "scripts/gith-monitor restart",
-    "postinstall": "chmod +x scripts/install && scripts/install",
-    "postuninstall": "chmod +x scripts/uninstall && scripts/uninstall"
+    "preinstall": "npm config set unsafe-perm true",
+    "postinstall": "chmod +x scripts/install && scripts/install && npm config set unsafe-perm false",
+    "preuninstall": "npm config set unsafe-perm true",
+    "postuninstall": "chmod +x scripts/uninstall && scripts/uninstall && npm config set unsafe-perm false"
   },
-  "unsafe-perm": true,
   "dependencies": {
     "gith": "1.0.2",
     "coffee-script":"1.4.0",
