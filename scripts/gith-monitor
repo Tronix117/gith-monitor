@@ -4,15 +4,16 @@ global.extend = (target)->
   target[name] = arg[name] for name in Object.keys arg for arg in arguments
   target
 
-init = require 'init'
+githMonitorPath = null
+GithMonitor = (try require githMonitorPath = path.join realdir, '..', 'index') or require githMonitorPath = 'gith-monitor'
+
+init = require githMonitorPath + '/node_modules/init'
 path = require 'path'
 fs = require 'fs'
 
 realdir = path.dirname(fs.realpathSync(__filename))
 
 global.config = extend (try require path.join realdir, '..', 'config') or {}, (try require '/etc/gith-deploy') or {}, (try require '~/.gith-deploy') or {}
-
-GithMonitor = (try require path.join realdir, '..', 'index') or {}, require 'gith-monitor'
 
 unless GithMonitor
   console.error 'Can\'t find gith-monitor, make sure you have done `npm install -g gith-monitor`.' 

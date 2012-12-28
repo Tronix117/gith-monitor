@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+echo -e "\nInstalling gith-monitor as daemon. Hit '^C' to cancel this step.\n"
+
+while true; do
+  read -p "Where is your configuration directory? [/etc]: " ETC
+
+  if [ "$ETC" = "" ]; 
+  then
+    ETC=/etc
+  fi
+
+  if [ -d "$ETC" ]; then
+    break
+  else
+    echo -e "> $ETC is not a valid directory\n"
+  fi
+done
+
+while true; do
+  read -p "Where is your startup-scripts directory? [$ETC/init.d]: " INITD
+
+  if [ "$INITD" = "" ]; 
+  then
+    INITD=$ETC/init.d
+  fi
+
+  if [ -d "$INITD" ]; then
+    break
+  else
+    echo -e "> $INITD is not a valid directory\n"
+  fi
+done
+
+sudo chmod +x gith-monitor
+sudo cp gith-monitor $INITD
+
+sudo chmod +x ../config.coffee
+sudo cp gith-monitor $ETC/gith-monitor
+
+$INITD/gith-monitor start
+
+echo -e "\n\n Gith Monitor is now fully installed and running.\n\nYou can edit the configuration with 'vi $ETC/gith-monitor' and once done, restart the server with '$INITD/gith-monitor restart'."
+
+echo -e "\nNote that you can also have a user based configuration, you can copy $ETC/gith-monitor to ~/.gith-monitor or to ~/.gith-monitor/index.coffee for more complex configurations."
