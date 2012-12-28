@@ -22,16 +22,12 @@ start() {
     echo "Always running"
     exit
   fi
-  forever start -c coffee -o $LOG_DIR/out.log -e $LOG_DIR/err.log --pidFile $PID $SERVER
+  forever start -c coffee -l $LOG_DIR/daemon.log -o $LOG_DIR/out.log -e $LOG_DIR/err.log --pidFile $PID $SERVER
 }
  
 stop() {
   forever stop $SERVER
   rm $PID
-}
- 
-reload() {
-    false
 }
  
 case "$1" in
