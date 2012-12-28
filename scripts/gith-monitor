@@ -13,7 +13,7 @@ fs = require 'fs'
 
 realdir = path.dirname(fs.realpathSync(__filename))
 
-global.config = extend (try require path.join realdir, '..', 'config') or {}, (try require '/etc/gith-deploy') or {}, (try require '~/.gith-deploy') or {}
+global.config = extend (try require path.join realdir, '..', 'config') or {}, (try require '/etc/gith-monitor') or {}, (try require '~/.gith-monitor') or {}
 
 unless GithMonitor
   console.error 'Can\'t find gith-monitor, make sure you have done `npm install -g gith-monitor`.' 
