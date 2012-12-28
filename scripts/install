@@ -32,17 +32,16 @@ while true; do
   fi
 done
 
-sudo chmod +x bin/gith-monitor
-sudo cp bin/gith-monitor $INITD
+sudo chmod +x scripts/gith-monitor
+sudo cp scripts/gith-monitor $INITD
 
-sudo chmod +x config.coffee
 if [ -f $ETC/gith-monitor ]
 then
   while true; do
-    read -p "Configuration file already exists: $ETC/gith-monitor. Do you want to replace it?" yn
+    read -p "Configuration file already exists: $ETC/gith-monitor. Do you want to replace it? " yn
     case $yn in
-        [Yy]* ) sudo cp config.coffee $ETC/gith-monitor;;
-        [Nn]* ) ;;
+        [Yy]* ) sudo cp config.coffee $ETC/gith-monitor; break;;
+        [Nn]* ) break;;
         * ) echo "Please answer yes or no.";;
     esac
   done
