@@ -18,9 +18,7 @@
     "start": "scripts/gith-monitor start",
     "stop": "scripts/gith-monitor stop",
     "restart": "scripts/gith-monitor restart",
-    "preinstall": "npm config set unsafe-perm true",
     "postinstall": "chmod +x scripts/install && scripts/install && npm config set unsafe-perm false",
-    "preuninstall": "npm config set unsafe-perm true",
     "postuninstall": "chmod +x scripts/uninstall && scripts/uninstall && npm config set unsafe-perm false"
   },
   "dependencies": {
