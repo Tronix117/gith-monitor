@@ -10,12 +10,15 @@ fs = require 'fs'
 
 realdir = path.dirname(fs.realpathSync(__filename))
 
-global.config = extend (try require path.join realdir, '..', 'config'), (try require '/etc/gith-deploy') or {}, (try require '~/.gith-deploy') or {}
+global.config = extend (try require path.join realdir, '..', 'config') or {}, (try require '/etc/gith-deploy') or {}, (try require '~/.gith-deploy') or {}
 
-GithMonitor = require path.join realdir, '..', 'main'
+GithMonitor = (try require path.join realdir, '..', 'index') or {}, require 'gith-monitor'
 
-init.simple 
-  pidfile : config.pidfile
-  logfile : config.logfile
-  command : process.argv[2]
-  run     : ()-> new GithMonitor config
+unless GithMonitor
+  console.error 'Can\'t find gith-monitor, make sure you have done `npm install -g gith-monitor`.' 
+else
+  init.simple 
+    pidfile : config.pidfile
+    logfile : config.logfile
+    command : process.argv[2]
+    run     : ()-> new GithMonitor config

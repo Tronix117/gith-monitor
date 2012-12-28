@@ -15,8 +15,13 @@
     "node": ">0.6.12"
   },
   "scripts": {
-    "start": "./bin/gith-monitor start"
+    "start": "./bin/gith-monitor start",
+    "stop": "./bin/gith-monitor stop",
+    "restart": "./bin/gith-monitor restart",
+    "postinstall": "sudo cp bin",
+    "postuninstall": ""
   },
+  "unsafe-perm": true,
   "dependencies": {
     "gith": "1.0.2",
     "coffee-script":"1.4.0",
