@@ -1,28 +1,50 @@
-#!/usr/bin/env coffee
+#!/bin/bash
+#
+# gith-monitor       init file for starting up the gith-monitor daemon
+#
+# chkconfig:   - 20 80
+# description: Starts and stops the gith-monitor daemon.
+ 
+PATH=$PATH:/usr/local/bin
+NAME="gith-monitor"
+PID="/var/run/$NAME.pid"
+LOG_DIR="/var/log/$NAME"
+SERVER="/usr/local/lib/node_modules/$NAME/index.coffee"
+ 
+if [ ! -d "/var/log/$NAME" ]
+then 
+  mkdir /var/log/$NAME
+fi
+ 
+start() {
+  if [ -e $PID ]
+  then
+    echo "Always running"
+    exit
+  fi
+  forever start -c coffee -o $LOG_DIR/out.log -e $LOG_DIR/err.log --pidFile $PID $SERVER
+}
+ 
+stop() {
+  forever stop $SERVER
+  rm $PID
+}
+ 
+reload() {
+    false
+}
+ 
+case "$1" in
+  start) start;;
+  stop) stop;;
+  status) forever list | grep $SERVER;;
+  restart)
+    stop
+    start
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop|restart|status}"
+    exit 2
+esac
 
-path = require 'path'
-fs = require 'fs'
-
-githMonitorPath = null
-GithMonitor = (try require githMonitorPath = path.join realdir, '..', 'index') or (try require githMonitorPath = 'gith-monitor') or (try require gitMonitorPath = '/usr/local/lib/node_modules/gith-monitor')
-
-{Monitor} = require githMonitorPath + '/node_modules/forever-monitor'
-
-unless GithMonitor
-  console.error 'Can\'t find gith-monitor, make sure you have done `npm install -g gith-monitor`.' 
-else
-  child = new Monitor('index.coffee',
-    max: 3
-    pidFile: config.pidfile
-    silent: true
-    command: 'coffee'
-    sourceDir: gitMonitorPath
-    options: []
-    logFile: config.logfile
-    outFile: config.logfile
-    errFile: config.logfile
-  )
-
-  child.on 'exit', ()-> console.log 'gith-monitor has exited after 3 restarts'
-
-  child[process.argv[2]]()
+exit $?

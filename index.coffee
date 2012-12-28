@@ -29,9 +29,8 @@ class GithMonitor
 
   loadRepos: (repos)->
     for repo, callbacks of repos
+      repoGith = @gith(repo: repo)
       for callback in [].concat callbacks 
-        gith(repo: repo).on 'all', () -> callback.apply callbacksContext, arguments
+        repoGith.on 'all', () -> callback.apply callbacksContext, arguments
 
-
-
-module.exports = GithMonitor
+module.exports = new GithMonitor()

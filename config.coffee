@@ -1,6 +1,6 @@
 module.exports =
-  pidfile : '/var/run/gith-deploy.pid'
-  logfile : '/var/log/gith-deploy.log'
+  pidfile: '/var/run/gith-monitor.pid'
+  logfile: '/var/log/gith-monitor.log'
   port: 9001 # Web server port on which github should send request
 
   repos:
