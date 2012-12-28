@@ -1,0 +1,21 @@
+#!/usr/bin/env coffee
+
+global.extend = (target)->
+  target[name] = arg[name] for name in Object.keys arg for arg in arguments
+  target
+
+init = require 'init'
+path = require 'path'
+fs = require 'fs'
+
+realdir = path.dirname(fs.realpathSync(__filename))
+
+global.config = extend (try require path.join realdir, '..', 'config'), (try require '/etc/gith-deploy') or {}, (try require '~/.gith-deploy') or {}
+
+GithMonitor = require path.join realdir, '..', 'main'
+
+init.simple 
+  pidfile : config.pidfile
+  logfile : config.logfile
+  command : process.argv[2]
+  run     : ()-> new GithMonitor config

@@ -1,0 +1,26 @@
+{
+  "name": "gith-deploy",
+  "description": "A node server that execute scripts when a github repository is updated",
+  "version": "0.1.0",
+  "homepage": "https://github.com/tronix117/gith-monitor",
+  "author": {
+    "name": "Jeremy Trufier",
+    "email": "jeremy@trufier.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tronix117/gith-monitor.git"
+  },
+  "engines": {
+    "node": ">0.6.12"
+  },
+  "scripts": {
+    "start": "./bin/gith-monitor start"
+  },
+  "dependencies": {
+    "gith": "1.0.2",
+    "coffee-script":"1.4.0",
+    "optimist": "0.3.5",
+    "init": "0.1.2"
+  }
+}
