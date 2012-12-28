@@ -36,7 +36,19 @@ sudo chmod +x gith-monitor
 sudo cp gith-monitor $INITD
 
 sudo chmod +x ../config.coffee
-sudo cp gith-monitor $ETC/gith-monitor
+if [ -f $ETC/gith-monitor ]
+then
+  while true; do
+    read -p "Configuration file already exists: $ETC/gith-monitor. Do you want to replace it?" yn
+    case $yn in
+        [Yy]* ) sudo cp gith-monitor $ETC/gith-monitor
+        [Nn]* ) ;;
+        * ) echo "Please answer yes or no.";;
+    esac
+  done
+else
+  sudo cp gith-monitor $ETC/gith-monitor
+fi
 
 $INITD/gith-monitor start
 

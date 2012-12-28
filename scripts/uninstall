@@ -33,6 +33,6 @@ while true; do
 done
 
 sudo rm $INITD/gith-monitor
-sudo rm $ETC/gith-monitor
+#sudo rm $ETC/gith-monitor
 
 echo -e "\nDone."
