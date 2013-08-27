@@ -22,7 +22,7 @@ start() {
     echo "Always running"
     exit
   fi
-  forever start -c coffee -l $LOG_DIR/daemon.log -o $LOG_DIR/out.log -e $LOG_DIR/err.log --pidFile $PID $SERVER
+  forever start -c coffee -a -l $LOG_DIR/daemon.log -o $LOG_DIR/out.log -e $LOG_DIR/err.log --pidFile $PID $SERVER
 }
  
 stop() {
