@@ -12,7 +12,7 @@ class Callback
     scripts = [].concat scripts
 
     script = [].concat(scripts.shift())
-    notStopOnStdErr = if typeof script[script.length - 1] is 'boolean' then script.pop() else false
+    stdErrToStdOut = if typeof script[script.length - 1] is 'boolean' then script.pop() else false
 
     if script.length is 1 # 'ls -la dir'
       args = script.shift().split(' ')
@@ -26,10 +26,10 @@ class Callback
       stdout += data
       out += data
     proc.stderr.on 'data', (data)-> 
-      stderr += data
+      if stdErrToStdOut then stdout += data else stderr += data
       out += data
     proc.on 'close', (code)=>
-      return callback stderr, stdout, out if (not notStopOnStdErr and stderr isnt '') or not scripts.length
+      return callback stderr, stdout, out if stderr isnt '' or not scripts.length
       @exec scripts, callback, options, stdout, stderr, out
     @
   execs: @exec
