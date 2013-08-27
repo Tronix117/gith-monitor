@@ -65,7 +65,6 @@ class GithMonitor
 
   config: {}
   gith: null
-  callbacksContext: new Callback
   mailer: null
 
   constructor: ()->
@@ -73,8 +72,6 @@ class GithMonitor
     @gith = gith.create @config.port
 
     @mailer = require('nodemailer').createTransport(@config.mailer.type || 'SMTP', @config.mailer) if @config.mailer
-
-    @callbacksContext = new Callback(Mailer)
 
     @loadRepos(@config.repos)
 
