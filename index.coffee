@@ -14,6 +14,9 @@ class Callback
       @exec scripts, callback, stdoutBuffer
     @
   execs: @exec
+  expose: (args = {}) -> 
+    @[k] = v for k,v of args
+    @
 
 class GithMonitor
 
@@ -28,9 +31,10 @@ class GithMonitor
     @loadRepos(@config.repos)
 
   loadRepos: (repos)->
+    callbacksContext = @callbacksContext
     for repo, callbacks of repos
       repoGith = @gith(repo: repo)
       for callback in [].concat callbacks 
-        repoGith.on 'all', () -> callback.apply callbacksContext, arguments
+        repoGith.on 'all', () -> callback.apply callbacksContext.expose(arguments[0]), arguments
 
 module.exports = new GithMonitor()

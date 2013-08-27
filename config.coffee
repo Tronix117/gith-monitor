@@ -4,8 +4,9 @@ module.exports =
   port: 9001 # Web server port on which github should send request
 
   repos:
-    'user/repo': (payload)->
-      console.log payload
+    'user/repo':->
+      console.log @
+      console.log "The branch is #{@branch}"
 
       callback = (error, stdout)->
         return console.error error if error
