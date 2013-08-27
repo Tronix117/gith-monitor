@@ -28,6 +28,7 @@
     "gith": "1.0.2",
     "coffee-script":"1.4.0",
     "optimist": "0.3.5",
-    "forever-monitor": "1.1.0"
+    "forever-monitor": "1.1.0",
+    "nodemailer": "0.5.2"
   }
 }
