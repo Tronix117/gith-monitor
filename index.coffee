@@ -103,6 +103,6 @@ class GithMonitor
         callbacksContext = new Callback
         callbacksContext.mailer = @mailer
         callbacksContext.mailerOptions = extend callbacksContext.mailerOptions, @config.mailer?.options or {}
-        repoGith.on 'all', () -> callback.apply callbacksContext.expose(arguments[0]), arguments
+        repoGith.on 'all', ((callback, callbacksContext)-> -> callback.apply callbacksContext.expose(arguments[0]), arguments)(callback, callbacksContext)
 
 module.exports = new GithMonitor()
