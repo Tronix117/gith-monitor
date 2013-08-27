@@ -12,6 +12,12 @@ module.exports =
 
   repos:
     'user/repo':->
+      # cwd String Current working directory of the child process
+      # env Object Environment key-value pairs
+      # uid Number Sets the user identity of the process. (See setuid(2).)
+      # gid Number Sets the group identity of the process. (See setgid(2).)
+      @exec.options = {}
+
       @mail.to = 'someone@tr.ee, someone-else@tr.ee'
 
       # Define some mails templates we can use (will be merge with mailer.templates)
@@ -25,6 +31,10 @@ module.exports =
         error:
           title: 'user/repo push hook is a failure'
           message: 'Hi,\nError at XX/YY/ZZZZ HH:MM,\n\nSTDOUT is:\n{{error}}'
+          options: cc: 'developper-support@tr.ee'
+        default:
+          title: 'user/repo push has been called'
+          message: 'Hi,\nHere what has been made:\n{{console}}'
           options: cc: 'developper-support@tr.ee'
 
       console.log @ # log the payload
@@ -57,12 +67,16 @@ module.exports =
       ], @mail.callback('other')
 
     'user/concrete-exemple':->
+      return unless @branch is 'master' # we just deploy if master has been pushed
+
+      @exec.options = uid: 5001 # corresponding to /home/website owner in this exemple
+
       @mail.options = to: @original?.head_commit?.author?.email # we use the mail of the last user to commit, it's generaly the one to push
 
       @mail.templates = 
         deployment_success: 
           subject: 'user/repo deployment is a success'
-          content: 'Hi,\nIt has been successfully deployed at XX/YY/ZZZZ HH:MM,\n\nSTDOUT is:\n{{stdout}}'
+          content: 'Hi,\nIt has been successfully deployed at XX/YY/ZZZZ HH:MM,\n\nSTDOUT is:\n{{success}}'
           options: cc: 'testers@tr.ee' # we CC the testers to tell them new modifications has been successfully deployed
         deployment_error: 
           subject: 'user/repo push hook is a failure'
@@ -70,7 +84,7 @@ module.exports =
 
       @exec [
         'cd /home/websites/concrete-exemple'
-        'git checkout master'
+        ['git checkout master', true] # the true here redirect stderr to stdout, otherwise the "Already on master" message will stop everything
         'git pull origin master'
         'npm install'
         'cake build'

@@ -1,5 +1,5 @@
 gith = require 'gith'
-{exec} = require 'child_process'
+{spawn} = require 'child_process'
 
 global.extend = (target)->
   target[name] = arg[name] for name in Object.keys arg for arg in arguments
@@ -7,12 +7,30 @@ global.extend = (target)->
 
 
 class Callback
-  exec: (scripts, callback, stdoutBuffer = '')-> 
+  exec: (scripts, callback, options = {}, stdout = '', stderr = '', out = '')-> 
+    options = extend options, @exec.options || {}
     scripts = [].concat scripts
-    exec scripts.shift(), (error, stdout, stderr)=> 
-      stdoutBuffer += stdout
-      return callback error, stdoutBuffer if error or not scripts.length
-      @exec scripts, callback, stdoutBuffer
+
+    script = [].concat(scripts.shift())
+    notStopOnStdErr = if typeof script[script.length - 1] is 'boolean' then script.pop() else false
+
+    if script.length is 1 # 'ls -la dir'
+      args = script.shift().split(' ')
+      command = args.shift()
+    else # ['ls', '-la', 'dir']
+      command = script.shift()
+      args = script
+
+    proc = spawn command , args, options
+    proc.stdout.on 'data', (data)-> 
+      stdout += data
+      out += data
+    proc.stderr.on 'data', (data)-> 
+      stderr += data
+      out += data
+    proc.on 'close', (code)=>
+      return callback stderr, stdout, out if (not notStopOnStdErr and stderr isnt '') or not scripts.length
+      @exec scripts, callback, options, stdout, stderr, out
     @
   execs: @exec
   expose: (args = {}) -> 
@@ -37,17 +55,18 @@ class Callback
 
     @mailer.sendMail options
   
-  mailCallback: (errorTemplate, successTemplate)->
-    return (->) unless mailer = @mailer and errorTemplate = @mail.templates[errorTemplate] and successTemplate = @mail.templates[successTemplate]
+  mailCallback: (errorTemplate, successTemplate)=>
+    return (->) unless (mailer = @mailer) and (errorTemplate = @mail.templates[errorTemplate]) and (successTemplate = @mail.templates[successTemplate])
 
     options = extend @mailerOptions, extend @mail.options, if typeof arguments[arguments.length - 1] is 'object' then arguments[arguments.length - 1] else {}
+    render = @render
 
-    (error, success)->
-      template if error then errorTemplate else successTemplate
+    (error, success, out)->
+      template = if error then errorTemplate else successTemplate
 
-      options = extend options, extend template.options or {}, {error: error, success: success}
-      options.subject = @render(template.title, options)
-      options.text = @render(template.message, options)
+      options = extend options, extend template.options or {}, {error: error, success: success, console: out}
+      options.subject = render(template.title or '', options)
+      options.text = render(template.message or '', options)
 
       mailer.sendMail options
 
@@ -59,6 +78,8 @@ class Callback
     @mail.options = {}
     @mail.templates = {}
     @mail.callback = @mailCallback
+
+    @exec.options = {}
 
 
 class GithMonitor
