@@ -1,16 +1,90 @@
-module.exports =
-  pidfile: '/var/run/gith-monitor.pid'
-  logfile: '/var/log/gith-monitor.log'
-  port: 9001 # Web server port on which github should send request
+# Default config file
+# usualy located in /etc/
+# 
+# You add all your repository there
+# and actions to do when the repository is updated on github
 
-  mailer: # See nodemailer config. If null, then mailer is not configured. 
-    type: 'SMTP' # default is SMTP, Sendmail, or SES can be used
+# Some preliminary definitions and functions that will be used
+# in multiple repositories
+
+UID = 
+  www_data: 33
+  user1: 1001
+  user2: 1002
+
+# Basicaly it's the same everywhere to get last version of a project
+# so we can define a method for that, which will return commands to 
+# execute.
+gitRetrieve = (branch = 'master')->
+   # second argument to `true` prevents the execution to stop on errors
+   # indeed, "Already on master" message or similar, are on STDERR and
+   # will stop the script execution
+  [["git reset --hard HEAD"    , true]
+   ["git checkout #{branch}"   , true]
+   ["git pull origin #{branch}", true]]
+
+
+# Now it's config time !
+module.exports =
+  # Web server port on which github should send request
+  port: 9001
+
+  # See nodemailer config. If null, then mailer is not configured. 
+  mailer:
+    # default is SMTP, Sendmail, or SES can be used
+    type: 'SMTP'
+
+    # Authentication informations
     service: "Gmail"
     auth: user: "gmail.user@gmail.com", pass: "userpass"
-    options: from: "no-reply@tr.ee"
+    
+    # default options for mail sending (from, cc, to, ...)
+    options: 
+      from: "no-reply@tr.ee"
+
+    # default mails templates, can be configured independentely on each repo
     templates: {}
 
+
+  # The repository configuration
   repos:
+
+    # This one is a basic exemple that can be used in a lot of cases
+    # `user/concrete-exemple` is your repository name on github
+    'user/concrete-exemple':->
+      # We just deploy if master has been pushed
+      return unless @branch is 'master'
+
+      return unless @branch is 'master' # we just deploy if master has been pushed
+
+      @exec.options = cwd: "/var/www/#{@repository.name}", uid: UID.www_data
+      @mail.options = to: @original?.pusher?.email # we use the mail of the last user to commit, it's generaly the one to push
+      @mail.templates = makeMailTemplates(@repo)
+
+      @exec (gitRetrieve().concat 'npm install --unsafe-perm'), @mail.callback('error', 'success')
+
+
+      @exec.options = uid: 5001 # corresponding to /home/website owner in this exemple
+
+      @mail.options = to: @original?.head_commit?.author?.email # we use the mail of the last user to commit, it's generaly the one to push
+
+      @mail.templates = 
+        deployment_success: 
+          subject: 'user/repo deployment is a success'
+          content: 'Hi,\nIt has been successfully deployed at XX/YY/ZZZZ HH:MM,\n\nSTDOUT is:\n{{success}}'
+          options: cc: 'testers@tr.ee' # we CC the testers to tell them new modifications has been successfully deployed
+        deployment_error: 
+          subject: 'user/repo push hook is a failure'
+          content: 'Hi,\nError at XX/YY/ZZZZ HH:MM,\n\nSTDOUT is:\n{{error}}'
+
+      @exec [
+        'cd /home/websites/concrete-exemple'
+        ['git checkout master', true] # the true here redirect stderr to stdout, otherwise the "Already on master" message will stop everything
+        'git pull origin master'
+        'npm install'
+        'cake build'
+      ], @mail.callback('deployment_error', 'deployment_success')
+
     'user/repo':->
       # cwd String Current working directory of the child process
       # env Object Environment key-value pairs
@@ -65,27 +139,3 @@ module.exports =
         'echo "' + (new Date).toUTCString() + '\n" >> monitored'
         'echo "success"'
       ], @mail.callback('other')
-
-    'user/concrete-exemple':->
-      return unless @branch is 'master' # we just deploy if master has been pushed
-
-      @exec.options = uid: 5001 # corresponding to /home/website owner in this exemple
-
-      @mail.options = to: @original?.head_commit?.author?.email # we use the mail of the last user to commit, it's generaly the one to push
-
-      @mail.templates = 
-        deployment_success: 
-          subject: 'user/repo deployment is a success'
-          content: 'Hi,\nIt has been successfully deployed at XX/YY/ZZZZ HH:MM,\n\nSTDOUT is:\n{{success}}'
-          options: cc: 'testers@tr.ee' # we CC the testers to tell them new modifications has been successfully deployed
-        deployment_error: 
-          subject: 'user/repo push hook is a failure'
-          content: 'Hi,\nError at XX/YY/ZZZZ HH:MM,\n\nSTDOUT is:\n{{error}}'
-
-      @exec [
-        'cd /home/websites/concrete-exemple'
-        ['git checkout master', true] # the true here redirect stderr to stdout, otherwise the "Already on master" message will stop everything
-        'git pull origin master'
-        'npm install'
-        'cake build'
-      ], @mail.callback('deployment_error', 'deployment_success')
