@@ -40,10 +40,28 @@ module.exports =
     
     # default options for mail sending (from, cc, to, ...)
     options: 
-      from: "no-reply@tr.ee"
+      from: "no-reply@my-company.org"
 
     # default mails templates, can be configured independentely on each repo
-    templates: {}
+    templates:
+      success: 
+        title: '{{original.repository.name}} deployment is a success'
+        message: -> # can be a string or a function
+          'Hi,\n' +
+          'Successfully deployed at ' + (new Date).toUTCString() + ',\n\n' +
+          'Console is:\n' + 
+          '{{console}}'
+
+        # we CC the testers to tell them new modifications 
+        # has been successfully deployed
+        options: cc: 'testers@my-company.org'
+      error: 
+        title: '{{original.repository.name}} push hook is a failure'
+        message: ->
+          'Hi,\n' +
+          'Error at ' + (new Date).toUTCString() + '\n\n' +
+          'Console is:\n' + 
+          '{{console}}'
 
 
   # The repository configuration
@@ -51,40 +69,63 @@ module.exports =
 
     # This one is a basic exemple that can be used in a lot of cases
     # `user/concrete-exemple` is your repository name on github
-    'user/concrete-exemple':->
-      # We just deploy if master has been pushed
-      return unless @branch is 'master'
+    'user/my-project':->
+      # Note: 
+      #   Gith payload is exposed on `@`
+      #   `@original` is the original payload sent by github
+      #   Check https://github.com/danheberden/gith#payload
+      #   for more informations
 
-      return unless @branch is 'master' # we just deploy if master has been pushed
+      # We just deploy if master or staging has been pushed
+      # (production is deployed on an other server)
+      return unless -1 is ['master', 'staging'].indexOf @branch
 
-      @exec.options = cwd: "/var/www/#{@repository.name}", uid: UID.www_data
-      @mail.options = to: @original?.pusher?.email # we use the mail of the last user to commit, it's generaly the one to push
-      @mail.templates = makeMailTemplates(@repo)
+      # Let's choose working path: 
+      # * `/var/www/my-project`
+      # * `/var/www/my-project-staging`
+      path = "/var/www/#{@original.repository.name}"
+      path += '-#{@branch}' if @branch is 'staging'
 
-      @exec (gitRetrieve().concat 'npm install --unsafe-perm'), @mail.callback('error', 'success')
+      # `cwd` defines the working directory, `uid` the user
+      # who will execute commands. (`gid` can also be used)
+      @exec.options = cwd: path, uid: UID.www_data
 
+      # We use the mail of the developper who pushed for feedback
+      @mail.options = to: @original.pusher.email
 
-      @exec.options = uid: 5001 # corresponding to /home/website owner in this exemple
-
-      @mail.options = to: @original?.head_commit?.author?.email # we use the mail of the last user to commit, it's generaly the one to push
-
-      @mail.templates = 
-        deployment_success: 
-          subject: 'user/repo deployment is a success'
-          content: 'Hi,\nIt has been successfully deployed at XX/YY/ZZZZ HH:MM,\n\nSTDOUT is:\n{{success}}'
-          options: cc: 'testers@tr.ee' # we CC the testers to tell them new modifications has been successfully deployed
-        deployment_error: 
-          subject: 'user/repo push hook is a failure'
-          content: 'Hi,\nError at XX/YY/ZZZZ HH:MM,\n\nSTDOUT is:\n{{error}}'
-
-      @exec [
-        'cd /home/websites/concrete-exemple'
-        ['git checkout master', true] # the true here redirect stderr to stdout, otherwise the "Already on master" message will stop everything
-        'git pull origin master'
+      # List of commands to execute to deploy 
+      # We will use commands defined in the gitRetrieve() method
+      # and three additional ones, two to update packages of our project
+      # and the last one to build it.
+      commands = gitRetrieve().concat [
         'npm install'
+        'bower install'
         'cake build'
-      ], @mail.callback('deployment_error', 'deployment_success')
+      ]
 
+      # We can directly use a mail as callback, first parameter is the template
+      # name to use as error, second is the template name to use as success.
+      callback = @mail.callback('error', 'success')
+
+      # Finaly, let the magic happen!!
+      @exec commands, callback 
+
+    # Same exemple with a little number of lines and no comments
+    'user/my-project-reduced':->
+      return unless -1 is ['master', 'staging'].indexOf @branch
+
+      @exec.options = 
+        cwd: "/var/www/#{@original.repository.name}" + if @branch is 'staging' then '-#{@branch}' else '',
+        uid: UID.www_data
+      @mail.options = to: @original.pusher.email
+
+      @exec gitRetrieve().concat [
+        'npm install'
+        'bower install'
+        'cake build'
+      ], @mail.callback('error', 'success') 
+
+    ## Some more misc documentation bellow
     'user/repo':->
       # cwd String Current working directory of the child process
       # env Object Environment key-value pairs
