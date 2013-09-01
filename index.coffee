@@ -44,34 +44,60 @@ class Callback
     return unless @mailer
     options = extend @mailerOptions, extend @mail.options, if typeof arguments[arguments.length - 1] is 'object' then arguments[arguments.length - 1] else {}
 
-    # @mail(template_name, attributes, options) or  @mail(template_name, attributes) or  @mail(template_name)
+    # @mail(template_name, options) or  @mail(template_name)
     if template = @mail.templates[arguments[0]]
       options = extend options, template.options or {}
-      options.subject = @render(template.title, options)
-      options.text = @render(template.message, options)
+      options.subject = template.subject
+      options.text = template.message
     else # @mail(title, message, options)
-      options.subject = @render(arguments[0], options)
-      options.text = @render(arguments[1], options)
+      options.subject = arguments[0]
+      options.text = arguments[1]
+
+    # Handle options that are functions, and render options content
+    for k, v of options
+      options[k] = @render (if typeof v is 'function' then v.apply @ else v), @
 
     @mailer.sendMail options
   
-  mailCallback: (errorTemplate, successTemplate)=>
-    return (->) unless (mailer = @mailer) and (errorTemplate = @mail.templates[errorTemplate]) and (successTemplate = @mail.templates[successTemplate])
+  mailCallback: (errorTemplate, successTemplate, options = {})=>
+    return (->) unless @mailer and @mail.templates[errorTemplate] and @mail.templates[successTemplate]
 
-    options = extend @mailerOptions, extend @mail.options, if typeof arguments[arguments.length - 1] is 'object' then arguments[arguments.length - 1] else {}
-    render = @render
-
-    (error, success, out)->
+    (error, success, out)=>
       template = if error then errorTemplate else successTemplate
 
-      options = extend options, extend template.options or {}, {error: error, success: success, console: out}
-      options.subject = render(template.title or '', options)
-      options.text = render(template.message or '', options)
+      @error = error
+      @success = success
+      @console = out
 
-      mailer.sendMail options
+      @mail(template, options)
 
+  ## 
+  # Light template engine
+  # 
+  # First argument is the template under the form
+  #   'My name is {{user.firstname}} {{user.lastname}}, my first friend 
+  #    is {{user.friends[0].firstname}}. I am {{status}}!'
+  # 
+  # Second argument is an object representing data
+  #   { user: {
+  #       firstname: 'Jeremy',
+  #       lastname: 'Trufier',
+  #       friends: [
+  #         { firstname: 'Jack',
+  #           lastname: 'Sparrow' }
+  #       ]
+  #     },
+  #     status: 'a great guy'
+  #   }
+  #   
+  #   It will result into:
+  #   'My name is Jeremy Trufier, my first friend is Jack. I am a great guy!'
   render: (str, attributes)->
-    str = str.replace(new RegExp("{{#{k}}}",'g'), v) for k,v of attributes
+    str = str.replace /{{(.*?)}}/g, ->
+      val = attributes
+      arguments[1].replace /(.*?)"?'?\]?(\.|\["?'?|$)/g, ->
+        val = val?[arguments[1]] if arguments[1]
+      val or ''
     str
 
   constructor: ()->

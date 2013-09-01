@@ -29,6 +29,16 @@ module.exports =
   # Web server port on which github should send request
   port: 9001
 
+  # This is the default context for every repo hook
+  # it means in functions under the `repos` key, those key will be accessible
+  # on `@`
+  # 
+  # It's cool to define some constants accross repos hook or templates
+  context:
+    # In mail templates/options we will have access to `{{sender}}`
+    # In repos hook methods, we will have access to `@sender`
+    sender: "no-reply@my-company.org"
+
   # See nodemailer config. If null, then mailer is not configured. 
   mailer:
     # default is SMTP, Sendmail, or SES can be used
@@ -36,14 +46,23 @@ module.exports =
 
     # Authentication informations
     service: "Gmail"
-    auth: user: "gmail.user@gmail.com", pass: "userpass"
+    auth: 
+      user: "gmail.user@gmail.com"
+      pass: "userpass"
     
-    # default options for mail sending (from, cc, to, ...)
+    # Default options for mail sending (from, cc, to, ...)
+    # all option can be function, the context (this or @) will be the same
+    # as the one in the current repository hook
     options: 
-      from: "no-reply@my-company.org"
+      # Sender of the mail
+      from: "{{sender}}"
+
+      # We use the mail of the developper who pushed for feedback
+      to: "{{original.pusher.email}}"
 
     # default mails templates, can be configured independentely on each repo
     templates:
+      # We define a generic success template
       success: 
         title: '{{original.repository.name}} deployment is a success'
         message: -> # can be a string or a function
@@ -52,9 +71,13 @@ module.exports =
           'Console is:\n' + 
           '{{console}}'
 
-        # we CC the testers to tell them new modifications 
-        # has been successfully deployed
-        options: cc: 'testers@my-company.org'
+        # We can also pass options which will override default ones to templates
+        options: 
+          # we CC the testers to tell them new modifications
+          # has been successfully deployed
+          cc: 'testers@my-company.org'
+
+      # We define a generic error template
       error: 
         title: '{{original.repository.name}} push hook is a failure'
         message: ->
@@ -90,9 +113,6 @@ module.exports =
       # who will execute commands. (`gid` can also be used)
       @exec.options = cwd: path, uid: UID.www_data
 
-      # We use the mail of the developper who pushed for feedback
-      @mail.options = to: @original.pusher.email
-
       # List of commands to execute to deploy 
       # We will use commands defined in the gitRetrieve() method
       # and three additional ones, two to update packages of our project
@@ -105,6 +125,7 @@ module.exports =
 
       # We can directly use a mail as callback, first parameter is the template
       # name to use as error, second is the template name to use as success.
+      # additionnal options can be passed as last argument (like to or cc, ...)
       callback = @mail.callback('error', 'success')
 
       # Finaly, let the magic happen!!
@@ -117,7 +138,6 @@ module.exports =
       @exec.options = 
         cwd: "/var/www/#{@original.repository.name}" + if @branch is 'staging' then '-#{@branch}' else '',
         uid: UID.www_data
-      @mail.options = to: @original.pusher.email
 
       @exec gitRetrieve().concat [
         'npm install'
