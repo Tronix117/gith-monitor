@@ -117,7 +117,7 @@ module.exports =
       # We will use commands defined in the gitRetrieve() method
       # and three additional ones, two to update packages of our project
       # and the last one to build it.
-      commands = gitRetrieve().concat [
+      commands = gitRetrieve(@branch).concat [
         'npm install'
         'bower install'
         'cake build'
@@ -139,7 +139,7 @@ module.exports =
         cwd: "/var/www/#{@original.repository.name}" + if @branch is 'staging' then '-#{@branch}' else '',
         uid: UID.www_data
 
-      @exec gitRetrieve().concat [
+      @exec gitRetrieve(@branch).concat [
         'npm install'
         'bower install'
         'cake build'
