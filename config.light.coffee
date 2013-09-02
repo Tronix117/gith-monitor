@@ -38,6 +38,8 @@ module.exports =
           'Console is:\n{{console}}'
 
   repos:
+    '*': -> console.log "Hook on: #{@repo}"
+
     'user/project-webapp': 'master, staging': ->
       @exec gitRetrieve().concat [
         'npm install'

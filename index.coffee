@@ -8,15 +8,19 @@ global.extend = (target)->
 
 class Callback
   exec: (scripts, callback, options = {}, stdout = '', stderr = '', out = '')-> 
-    options = extend options, @exec.options || {}
+    options = extend @execOptions, @exec.options || {}, options
 
     for k, v of options
       if k isnt 'callback'
         options[k] = @render (if typeof v is 'function' then v.apply @ else v), @
 
-    options['callback'] = options['createCallback'] if options['createCallback']
-
-    callback = options['callback'] if callback is null
+    options['callback'] = callback if callback
+    unless typeof options['callback'] is 'function'
+      if typeof options['createCallback'] is 'function'
+        options['callback'] = options['createCallback']
+        delete options.createCallback
+      else
+        options['callback'] = -> console.log 'NO CALLBACK DEFINED'
 
     scripts = [].concat scripts
 
@@ -38,25 +42,27 @@ class Callback
       if stdErrToStdOut then stdout += data else stderr += data
       out += data
     proc.on 'close', (code)=>
-      return callback stderr, stdout, out if stderr isnt '' or not scripts.length
-      @exec scripts, callback, options, stdout, stderr, out
+      return options['callback'] stderr, stdout, out if stderr isnt '' or not scripts.length
+      @exec scripts, null, options, stdout, stderr, out
     @
   execs: @exec
   expose: (args = {}) -> 
     @[k] = v for k,v of args
     @
-
+  execOptions: {}
   mailer: null
   mailerOptions: 
     from: 'nobody@nobody.com'
-  mail: ->
+  mail: =>
     return unless @mailer
-    options = extend @mailerOptions, extend @mail.options, if typeof arguments[arguments.length - 1] is 'object' then arguments[arguments.length - 1] else {}
+    options = extend @mailerOptions, @mail.options, if typeof arguments[arguments.length - 1] is 'object' then arguments[arguments.length - 1] else {}
+
+    templates = extend {}, @mailer.options?.templates or {}, @mail.templates or {}
 
     # @mail(template_name, options) or  @mail(template_name)
-    if template = @mail.templates[arguments[0]]
+    if template = templates[arguments[0]]
       options = extend options, template.options or {}
-      options.subject = template.subject
+      options.subject = template.title
       options.text = template.message
     else # @mail(title, message, options)
       options.subject = arguments[0]
@@ -69,7 +75,7 @@ class Callback
     @mailer.sendMail options
   
   mailCallback: (errorTemplate, successTemplate, options = {})=>
-    return (->) unless @mailer and @mail.templates[errorTemplate] and @mail.templates[successTemplate]
+    return (->) unless @mailer
 
     (error, success, out)=>
       template = if error then errorTemplate else successTemplate
@@ -150,7 +156,7 @@ class GithMonitor
         hooks.push {on: 'all', branch: null, callback: callbacks}
 
       for hook in hooks
-        settings = repo: hook.repo
+        settings = repo: repo
         settings['branch'] = hook.branch if hook.branch
         callback = hook.callback
 
@@ -160,8 +166,10 @@ class GithMonitor
         callbacksContext.mailer = @mailer
         callbacksContext.mailerOptions = extend callbacksContext.mailerOptions, @config.mailer?.options or {}
         callbacksContext[k] = v for k, v of @config.context or {}
-        callbacksContext.exec.options[k] = v for k, v of @config.exec or {}
+        callbacksContext.execOptions[k] = v for k, v of @config.exec or {}
         
+        console.log 'Watch ' + repo + ' on ' + hook.on + ' for branch: ' + (hook.branch or 'all')
+
         repoGith.on hook.on, ((callback, callbacksContext)-> -> callback.apply callbacksContext.expose(arguments[0]), arguments)(callback, callbacksContext)
 
 module.exports = new GithMonitor()
