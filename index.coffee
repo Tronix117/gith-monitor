@@ -142,7 +142,7 @@ class GithMonitor
               hooks.push {on: 'all', branch: null, callback: callback}
         else # Object: `'branch1, branch2': -> ...callback...` or `'branch1 branch2 branch3': [(-> ...calback1...), (-> ...callback2...)]`
           for branches, callback of callbacks
-            branches = branches.replace(/ *(,| ) */g, ',').split(',') # match `branch1,branch2 branch3   ,   branch4`
+            branches = branches.replace(/\s*(,|\s)\s*/g, ',').split(',') # match `branch1,branch2 branch3   ,   branch4`
             for c in [].concat callback
               for branch in branches
                 hooks.push {on: 'all', branch: branch, callback: c} if typeof c is 'function'
@@ -159,8 +159,8 @@ class GithMonitor
         callbacksContext = new Callback
         callbacksContext.mailer = @mailer
         callbacksContext.mailerOptions = extend callbacksContext.mailerOptions, @config.mailer?.options or {}
-        callbackContext[k] = v for k, v of @config.context or {}
-        callbackContext.exec.options[k] = v for k, v of @config.exec or {}
+        callbacksContext[k] = v for k, v of @config.context or {}
+        callbacksContext.exec.options[k] = v for k, v of @config.exec or {}
         
         repoGith.on hook.on, ((callback, callbacksContext)-> -> callback.apply callbacksContext.expose(arguments[0]), arguments)(callback, callbacksContext)
 
