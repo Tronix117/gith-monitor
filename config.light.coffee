@@ -17,7 +17,7 @@ module.exports =
   exec: 
     uid: "{{UID.www_data}}"
     cwd: -> "/var/www/{{original.repository.name}}" + if @branch is 'master' then '' else '-{{branch}}'
-    callback: -> @mail.callback 'error', 'success'
+    createCallback: -> @mail.callback 'error', 'success' # `createCallback` expects a method which generate the `callback` method
 
   mailer:
     auth: user: "gmail.user@gmail.com", pass: "userpass"

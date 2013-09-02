@@ -9,6 +9,13 @@ global.extend = (target)->
 class Callback
   exec: (scripts, callback, options = {}, stdout = '', stderr = '', out = '')-> 
     options = extend options, @exec.options || {}
+
+    for k, v of options
+      if k isnt 'callback'
+        options[k] = @render (if typeof v is 'function' then v.apply @ else v), @
+
+    options['callback'] = options['createCallback'] if options['createCallback']
+
     scripts = [].concat scripts
 
     script = [].concat(scripts.shift())
@@ -123,35 +130,35 @@ class GithMonitor
     @loadRepos(@config.repos)
 
   loadRepos: (repos)->
-    hooks = {}
     for repo, callbacks of repos
-      hooks[repo] = []
+      hooks = []
       if typeof callbacks is 'object'
         if callbacks instanceof Array
           for callback in callbacks
             if typeof callback is 'function'
-              hooks[repo].push {on: 'all', branch: null, callback: callback}
+              hooks.push {on: 'all', branch: null, callback: callback}
         else # Object: `'branch1, branch2': -> ...callback...` or `'branch1 branch2 branch3': [(-> ...calback1...), (-> ...callback2...)]`
           for branches, callback of callbacks
             branches = branches.replace(/ *(,| ) */g, ',').split(',') # match `branch1,branch2 branch3   ,   branch4`
             for c in [].concat callback
               for branch in branches
-                hooks[repo].push {on: 'all', branch: branch, callback: c} if typeof c is 'function'
+                hooks.push {on: 'all', branch: branch, callback: c} if typeof c is 'function'
       else if typeof callbacks is 'function'
-        hooks[repo].push {on: 'all', branch: null, callback: callbacks}
+        hooks.push {on: 'all', branch: null, callback: callbacks}
 
-      for repo, _hooks in hooks
-        for hook in _hooks
-          settings = repo: hook.repo
-          settings['branch'] = hook.branch if hook.branch
-          callback = hook.callback
+      for hook in hooks
+        settings = repo: hook.repo
+        settings['branch'] = hook.branch if hook.branch
+        callback = hook.callback
 
-          repoGith = @gith settings
+        repoGith = @gith settings
 
-          callbacksContext = new Callback
-          callbacksContext.mailer = @mailer
-          callbacksContext.mailerOptions = extend callbacksContext.mailerOptions, @config.mailer?.options or {}
-          
-          repoGith.on hook.on, ((callback, callbacksContext)-> -> callback.apply callbacksContext.expose(arguments[0]), arguments)(callback, callbacksContext)
+        callbacksContext = new Callback
+        callbacksContext.mailer = @mailer
+        callbacksContext.mailerOptions = extend callbacksContext.mailerOptions, @config.mailer?.options or {}
+        callbackContext[k] = v for k, v of @config.context or {}
+        callbackContext.exec.options[k] = v for k, v of @config.exec or {}
+        
+        repoGith.on hook.on, ((callback, callbacksContext)-> -> callback.apply callbacksContext.expose(arguments[0]), arguments)(callback, callbacksContext)
 
 module.exports = new GithMonitor()
