@@ -16,6 +16,8 @@ class Callback
 
     options['callback'] = options['createCallback'] if options['createCallback']
 
+    callback = options['callback'] if callback is null
+
     scripts = [].concat scripts
 
     script = [].concat(scripts.shift())
@@ -100,6 +102,7 @@ class Callback
   #   It will result into:
   #   'My name is Jeremy Trufier, my first friend is Jack. I am a great guy!'
   render: (str, attributes)->
+    return str unless typeof str is 'string'
     str = str.replace /{{(.*?)}}/g, ->
       val = attributes
       arguments[1].replace /(.*?)"?'?\]?(\.|\["?'?|$)/g, ->
