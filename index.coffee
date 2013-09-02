@@ -123,12 +123,35 @@ class GithMonitor
     @loadRepos(@config.repos)
 
   loadRepos: (repos)->
+    hooks = {}
     for repo, callbacks of repos
-      repoGith = @gith(repo: repo)
-      for callback in [].concat callbacks 
-        callbacksContext = new Callback
-        callbacksContext.mailer = @mailer
-        callbacksContext.mailerOptions = extend callbacksContext.mailerOptions, @config.mailer?.options or {}
-        repoGith.on 'all', ((callback, callbacksContext)-> -> callback.apply callbacksContext.expose(arguments[0]), arguments)(callback, callbacksContext)
+      hooks[repo] = []
+      if typeof callbacks is 'object'
+        if callbacks instanceof Array
+          for callback in callbacks
+            if typeof callback is 'function'
+              hooks[repo].push {on: 'all', branch: null, callback: callback}
+        else # Object: `'branch1, branch2': -> ...callback...` or `'branch1 branch2 branch3': [(-> ...calback1...), (-> ...callback2...)]`
+          for branches, callback of callbacks
+            branches = branches.replace(/ *(,| ) */g, ',').split(',') # match `branch1,branch2 branch3   ,   branch4`
+            for c in [].concat callback
+              for branch in branches
+                hooks[repo].push {on: 'all', branch: branch, callback: c} if typeof c is 'function'
+      else if typeof callbacks is 'function'
+        hooks[repo].push {on: 'all', branch: null, callback: callbacks}
+
+      for repo, _hooks in hooks
+        for hook in _hooks
+          settings = repo: hook.repo
+          settings['branch'] = hook.branch if hook.branch
+          callback = hook.callback
+
+          repoGith = @gith settings
+
+          callbacksContext = new Callback
+          callbacksContext.mailer = @mailer
+          callbacksContext.mailerOptions = extend callbacksContext.mailerOptions, @config.mailer?.options or {}
+          
+          repoGith.on hook.on, ((callback, callbacksContext)-> -> callback.apply callbacksContext.expose(arguments[0]), arguments)(callback, callbacksContext)
 
 module.exports = new GithMonitor()
