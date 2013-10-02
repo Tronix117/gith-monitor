@@ -11,13 +11,13 @@ class Callback
     options = extend @execOptions, @exec.options || {}, options
 
     for k, v of options
-      if k isnt 'callback'
+      if k isnt 'callback' and k isnt 'createCallback'
         options[k] = @render (if typeof v is 'function' then v.apply @ else v), @
 
     options['callback'] = callback if callback
     unless typeof options['callback'] is 'function'
       if typeof options['createCallback'] is 'function'
-        options['callback'] = options['createCallback']
+        options['callback'] = options['createCallback'].apply @
         delete options.createCallback
       else
         options['callback'] = -> console.log 'NO CALLBACK DEFINED'
